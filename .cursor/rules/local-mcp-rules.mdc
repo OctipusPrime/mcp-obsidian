@@ -1,0 +1,6 @@
+---
+alwaysApply: true
+---
+
+This project is about creating MCP server for interacting with Obsidian via the Obsidian local API. 
+

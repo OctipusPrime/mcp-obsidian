@@ -1,0 +1,18 @@
+{
+"mcpServers": {
+    "mcp-obsidian": {
+    "command": "uv",
+    "args": [
+        "--directory",
+        "/Users/Yan.Barta/Library/CloudStorage/OneDrive-Adastra,s.r.o/mcp-obsidian",
+        "run",
+        "mcp-obsidian"
+    ],
+    "env": {
+        "OBSIDIAN_API_KEY": "ee2592fea31ec943ae09d3a7deede855fdacb502e8874713af0ec23921d12b6b",
+        "OBSIDIAN_HOST": "127.0.0.1",
+        "OBSIDIAN_PORT": "27124"
+    }
+    }
+}
+}
