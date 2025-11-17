@@ -1,7 +1,10 @@
+import logging
 import requests
 import urllib.parse
 import os
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 class Obsidian():
     def __init__(
@@ -98,6 +101,35 @@ class Obsidian():
                 result.append(f"# {filepath}\n\nError reading file: {str(e)}\n\n---\n\n")
                 
         return "".join(result)
+
+    def find_file_by_name(self, filename: str) -> str:
+        """Find the full path of a file in the vault by its name."""
+        if not filename or not filename.strip():
+            raise ValueError("filename must be a non-empty string")
+
+        filename = filename.strip()
+        base_filename, _ = os.path.splitext(filename)
+        search_patterns = [
+            f"**/{base_filename}.*" if base_filename else f"**/{filename}",
+            f"**/{filename}",
+        ]
+        logger.debug("Searching for filename '%s' using patterns: %s", filename, search_patterns)
+
+        for pattern in search_patterns:
+            query = {
+                "glob": [
+                    pattern,
+                    {"var": "path"}
+                ]
+            }
+            results = self.search_json(query)
+            logger.debug("Search results for pattern '%s': %s", pattern, results)
+            if results:
+                matched_path = results[0].get('filename') # only get first result if there are multiple
+                if matched_path:
+                    return matched_path
+
+        raise FileNotFoundError(f"No file matching '{filename}' found in the vault.")
 
     def search(self, query: str, context_length: int = 100) -> Any:
         url = f"{self.get_base_url()}/search/simple/"

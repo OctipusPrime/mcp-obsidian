@@ -98,27 +98,27 @@ class GetFileContentsToolHandler(ToolHandler):
     def get_tool_description(self):
         return Tool(
             name=self.name,
-            description="Return the content of a single file in your vault.",
+            description="Return the content of a single file in your vault by filename.",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "filepath": {
+                    "filename": {
                         "type": "string",
-                        "description": "Path to the relevant file (relative to your vault root).",
-                        "format": "path"
+                        "description": "Name of the file to fetch (path is resolved automatically)."
                     },
                 },
-                "required": ["filepath"]
+                "required": ["filename"]
             }
         )
 
     def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
-        if "filepath" not in args:
-            raise RuntimeError("filepath argument missing in arguments")
+        if "filename" not in args:
+            raise RuntimeError("filename argument missing in arguments")
 
         api = obsidian.Obsidian(api_key=api_key, host=obsidian_host)
 
-        content = api.get_file_contents(args["filepath"])
+        filepath = api.find_file_by_name(args["filename"])
+        content = api.get_file_contents(filepath)
 
         return [
             TextContent(
@@ -441,30 +441,33 @@ class BatchGetFileContentsToolHandler(ToolHandler):
     def get_tool_description(self):
         return Tool(
             name=self.name,
-            description="Return the contents of multiple files in your vault, concatenated with headers.",
+            description="Return the contents of multiple files in your vault by filename, concatenated with headers.",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "filepaths": {
+                    "filenames": {
                         "type": "array",
                         "items": {
                             "type": "string",
-                            "description": "Path to a file (relative to your vault root)",
-                            "format": "path"
+                            "description": "Name of a file to fetch (path is resolved automatically)."
                         },
-                        "description": "List of file paths to read"
+                        "description": "List of filenames to read"
                     },
                 },
-                "required": ["filepaths"]
+                "required": ["filenames"]
             }
         )
 
     def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
-        if "filepaths" not in args:
-            raise RuntimeError("filepaths argument missing in arguments")
+        if "filenames" not in args:
+            raise RuntimeError("filenames argument missing in arguments")
 
         api = obsidian.Obsidian(api_key=api_key, host=obsidian_host)
-        content = api.get_batch_file_contents(args["filepaths"])
+        resolved_paths = [
+            api.find_file_by_name(filename)
+            for filename in args["filenames"]
+        ]
+        content = api.get_batch_file_contents(resolved_paths)
 
         return [
             TextContent(
