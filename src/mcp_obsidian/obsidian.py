@@ -102,8 +102,15 @@ class Obsidian():
                 
         return "".join(result)
 
-    def find_file_by_name(self, filename: str) -> str:
-        """Find the full path of a file in the vault by its name."""
+    def find_file_by_name(self, filename: str) -> tuple[str | None, str | None]:
+        """Resolve a filename to its vault path.
+        
+        Returns:
+            Tuple[path, notice]. When the file is found, path contains the
+            resolved path and notice is None. When no matching file exists,
+            path is None and notice describes that the file has not been
+            created yet.
+        """
         if not filename or not filename.strip():
             raise ValueError("filename must be a non-empty string")
 
@@ -125,11 +132,12 @@ class Obsidian():
             results = self.search_json(query)
             logger.debug("Search results for pattern '%s': %s", pattern, results)
             if results:
-                matched_path = results[0].get('filename') # only get first result if there are multiple
+                matched_path = results[0].get('filename')  # only get first result if there are multiple
                 if matched_path:
-                    return matched_path
+                    return matched_path, None
 
-        raise FileNotFoundError(f"No file matching '{filename}' found in the vault.")
+        notice = f"File '{filename}' hasn't been created in the vault yet."
+        return None, notice
 
     def search(self, query: str, context_length: int = 100) -> Any:
         url = f"{self.get_base_url()}/search/simple/"

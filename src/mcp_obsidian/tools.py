@@ -98,7 +98,8 @@ class GetFileContentsToolHandler(ToolHandler):
     def get_tool_description(self):
         return Tool(
             name=self.name,
-            description="Return the content of a single file in your vault by filename.",
+
+            description="Return the content of a single file in your vault by filename. If the file doesn't exist yet, the tool responds with a notice instead of an error.",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -117,7 +118,15 @@ class GetFileContentsToolHandler(ToolHandler):
 
         api = obsidian.Obsidian(api_key=api_key, host=obsidian_host)
 
-        filepath = api.find_file_by_name(args["filename"])
+        filepath, notice = api.find_file_by_name(args["filename"])
+        if notice:
+            return [
+                TextContent(
+                    type="text",
+                    text=notice
+                )
+            ]
+
         content = api.get_file_contents(filepath)
 
         return [
@@ -441,7 +450,7 @@ class BatchGetFileContentsToolHandler(ToolHandler):
     def get_tool_description(self):
         return Tool(
             name=self.name,
-            description="Return the contents of multiple files in your vault by filename, concatenated with headers.",
+            description="Return the contents of multiple files in your vault by filename, concatenated with headers. Any filenames that do not yet exist return a notice instead of an error.",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -463,11 +472,28 @@ class BatchGetFileContentsToolHandler(ToolHandler):
             raise RuntimeError("filenames argument missing in arguments")
 
         api = obsidian.Obsidian(api_key=api_key, host=obsidian_host)
-        resolved_paths = [
-            api.find_file_by_name(filename)
-            for filename in args["filenames"]
-        ]
-        content = api.get_batch_file_contents(resolved_paths)
+        resolved_paths = []
+        missing_sections = []
+
+        for filename in args["filenames"]:
+            filepath, notice = api.find_file_by_name(filename)
+            if filepath:
+                resolved_paths.append(filepath)
+            else:
+                missing_sections.append(
+                    f"# {filename}\n\n{notice}\n\n---\n\n"
+                )
+
+        content_parts = []
+        if resolved_paths:
+            content_parts.append(api.get_batch_file_contents(resolved_paths))
+        if missing_sections:
+            content_parts.append("".join(missing_sections))
+
+        if not content_parts:
+            content_parts.append("No matching files were found in the vault.")
+
+        content = "".join(content_parts)
 
         return [
             TextContent(

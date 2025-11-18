@@ -48,9 +48,10 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
-    logging.basicConfig(level=getattr(logging, "DEBUG"))
-    logging.getLogger().setLevel(logging.DEBUG)
-    logging.getLogger("mcp_obsidian").setLevel(logging.DEBUG)
+    log_level = getattr(logging, args.log_level)
+    logging.basicConfig(level=log_level)
+    logging.getLogger().setLevel(log_level)
+    logging.getLogger("mcp_obsidian").setLevel(log_level)
 
     api_key = os.getenv("OBSIDIAN_API_KEY")
     if not api_key:
@@ -66,8 +67,11 @@ def main() -> None:
         verify_ssl=args.verify_ssl,
     )
 
-    resolved_path = client.find_file_by_name(args.filename)
-    print(f"Matched path: {resolved_path}")
+    path, notice = client.find_file_by_name(args.filename)
+    if notice:
+        print(notice)
+    if path:
+        print(f"Matched path: {path}")
 
 
 if __name__ == "__main__":
